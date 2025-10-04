@@ -1,0 +1,231 @@
+from flask import Flask, request, render_template_string
+import math
+
+app = Flask(__name__)
+
+# HTML Template
+HTML_PAGE = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hackathon Challenge</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: Arial, sans-serif;
+            overflow: auto;
+        }
+
+        #bg-video {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;       /* 100% of the viewport width */
+            height: 100vh;      /* 100% of the viewport height */
+            object-fit: cover;  /* ensures the video fills the screen without stretching */
+            z-index: -1;        /* keeps it behind all content */
+            background-size: cover;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            text-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+        }
+
+        hr {
+            width: 80%;
+            margin: 20px auto;
+            border: 1px solid rgba(255,255,255,0.4);
+        }
+
+        /* Panel Layout */
+        .panel-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 25px;
+            margin-top: 40px;
+            padding-bottom: 50px;
+        }
+
+        /* Floating Panels */
+        .task-panel {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+            padding: 25px;
+            width: 300px;
+            height: 180px;
+            overflow: hidden;
+            transition: all 0.4s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+        .task-panel {
+            animation: float 4s ease-in-out infinite;
+        }
+
+        .task-panel:hover {
+            height: auto;
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+            background-color: rgba(255, 255, 255, 1);
+            z-index: 10;
+        }
+
+        .task-panel h2 {
+            text-align: center;
+            margin-top: 0;
+        }
+
+        .task-panel input,
+        .task-panel button,
+        .task-panel textarea {
+            width: 100%;
+            margin: 5px 0 10px 0;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+        }
+
+        .task-panel button {
+            background-color: #007BFF;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .task-panel button:hover {
+            background-color: #0056b3;
+        }
+
+        .task-panel p, .task-panel ul {
+            animation: fadein 0.6s ease;
+        }
+
+        @keyframes fadein {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        ul {
+            list-style-type: square;
+            margin-left: 20px;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <video autoplay muted loop id="bg-video">
+        <source src="{{ url_for('static', filename='bg.mp4') }}" type="video/mp4">
+        Your browser does not support the video tag.
+    </video>
+
+    <h1> Can of Joe Hackathon Challenge!</h1>
+    <hr>
+
+    <div class="panel-container">
+
+        <!-- Task 1: Factorial Calculator -->
+        <div class="task-panel">
+            <h2>Task 1: Factorial Calculator</h2>
+            <form method="POST">
+                <label>Enter a number:</label>
+                <input type="number" name="num" min="0" required>
+                <button type="submit" name="task" value="factorial">Compute Factorial</button>
+            </form>
+            {% if factorial_result %}
+                <p><strong>Result:</strong> {{ factorial_result }}</p>
+            {% endif %}
+        </div>
+
+        <!-- Task 2: Circle Calculator -->
+        <div class="task-panel">
+            <h2>Task 2: Circle Calculator</h2>
+            <form method="POST">
+                <label>Enter radius:</label>
+                <input type="number" step="0.01" name="radius" min="0" required>
+                <button type="submit" name="task" value="circle">Compute Circle</button>
+            </form>
+            {% if circle_result %}
+                <p><strong>Area:</strong> {{ circle_result.area }}</p>
+                <p><strong>Circumference:</strong> {{ circle_result.circumference }}</p>
+                <p><strong>Diameter:</strong> {{ circle_result.diameter }}</p>
+            {% endif %}
+        </div>
+
+        <!-- Task 3: Duplicate Remover -->
+        <div class="task-panel">
+            <h2>Task 3: Remove Duplicates</h2>
+            <form method="POST">
+                <label>Enter integers separated by spaces:</label>
+                <input type="text" name="int_list" required>
+                <button type="submit" name="task" value="unique">Remove Duplicates</button>
+            </form>
+            {% if unique_result %}
+                <p><strong>Unique List:</strong> {{ unique_result }}</p>
+            {% endif %}
+        </div>
+
+    </div>
+</body>
+</html>
+"""
+
+@app.route("/", methods=["GET", "POST"])
+def hackathon():
+    factorial_result = None
+    circle_result = None
+    unique_result = None
+
+    if request.method == "POST":
+        task = request.form.get("task")
+
+        # Task 1: Factorial Calculator
+        if task == "factorial":
+            num = int(request.form["num"])
+            def factorial(n):
+                if n == 0 or n == 1:
+                    return 1
+                else:
+                    return n * factorial(n - 1)
+            factorial_result = f"The factorial of {num} is {factorial(num)} ✅"
+
+        # Task 2: Circle Calculator
+        elif task == "circle":
+            radius = float(request.form["radius"])
+            area = round(math.pi * radius ** 2, 2)
+            circumference = round(2 * math.pi * radius, 2)
+            diameter = round(2 * radius, 2)
+            circle_result = {
+                "area": area,
+                "circumference": circumference,
+                "diameter": diameter
+            }
+
+        # Task 3: Duplicate Remover
+        elif task == "unique":
+            try:
+                int_list = [int(x) for x in request.form["int_list"].split()]
+                unique_ints = sorted(set(int_list), key=int_list.index)
+                unique_result = unique_ints
+            except ValueError:
+                unique_result = "⚠️ Please enter only integers separated by spaces."
+
+    return render_template_string(
+        HTML_PAGE,
+        factorial_result=factorial_result,
+        circle_result=circle_result,
+        unique_result=unique_result
+    )
+
+if __name__ == "__main__":
+    app.run(debug=True)
